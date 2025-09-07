@@ -80,6 +80,13 @@
       margin: 8px 0 0;
       font-weight: bold;
       color: #b91c1c;
+      font-size: 14px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;   /* ✅ max 2 lines */
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      word-wrap: break-word;
     }
     .delete-btn {
       display: none; /* Only visible in admin mode */
