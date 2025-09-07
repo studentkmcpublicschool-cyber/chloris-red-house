@@ -54,7 +54,7 @@
       margin: 20px auto;
     }
     .admin-controls button {
-      display: none; /* Hidden until login */
+      display: none;
     }
     .gallery {
       display: grid;
@@ -69,6 +69,7 @@
       padding: 10px;
       box-shadow: 2px 2px 6px rgba(0,0,0,0.1);
       position: relative;
+      cursor: pointer;
     }
     .card img {
       width: 100%;
@@ -82,14 +83,14 @@
       color: #b91c1c;
       font-size: 14px;
       display: -webkit-box;
-      -webkit-line-clamp: 2;   /* allow max 2 lines */
+      -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
       text-overflow: ellipsis;
       word-wrap: break-word;
     }
     .delete-btn {
-      display: none; /* Only visible in admin mode */
+      display: none;
       position: absolute;
       top: 8px;
       right: 8px;
@@ -103,6 +104,75 @@
     }
     .delete-btn:hover {
       background: crimson;
+    }
+    /* Popup */
+    .popup {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .popup-content {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+      max-width: 90%;
+      max-height: 90%;
+      position: relative;
+    }
+    .popup-content img {
+      max-width: 100%;
+      max-height: 300px;
+      border-radius: 8px;
+    }
+    .popup-content .popup-name {
+      margin-top: 10px;
+      font-weight: bold;
+      color: #b91c1c;
+      font-size: 18px;
+      white-space: pre-line;
+    }
+    .close-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: darkred;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 5px 10px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .close-btn:hover {
+      background: crimson;
+    }
+    .arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(0,0,0,0.5);
+      color: white;
+      border: none;
+      font-size: 24px;
+      padding: 10px;
+      cursor: pointer;
+      border-radius: 50%;
+    }
+    .arrow:hover {
+      background: rgba(0,0,0,0.8);
+    }
+    .left-arrow {
+      left: -50px;
+    }
+    .right-arrow {
+      right: -50px;
     }
   </style>
 </head>
@@ -130,15 +200,31 @@
 
   <section class="gallery" id="gallery"></section>
 
+  <!-- Popup -->
+  <div id="popup" class="popup" onclick="closePopup(event)">
+    <div class="popup-content">
+      <button class="close-btn" onclick="hidePopup()">❌</button>
+      <button id="leftArrow" class="arrow left-arrow" onclick="prevStudent(event)">⬅</button>
+      <img id="popupImg" src="">
+      <div id="popupName" class="popup-name"></div>
+      <button id="rightArrow" class="arrow right-arrow" onclick="nextStudent(event)">➡</button>
+    </div>
+  </div>
+
   <script>
     const form = document.getElementById('studentForm');
     const gallery = document.getElementById('gallery');
     const resetBtn = document.getElementById('resetBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     const loginBtn = document.getElementById('loginBtn');
+    const popup = document.getElementById('popup');
+    const popupImg = document.getElementById('popupImg');
+    const popupName = document.getElementById('popupName');
+    const leftArrow = document.getElementById('leftArrow');
+    const rightArrow = document.getElementById('rightArrow');
     let isAdmin = false;
+    let currentIndex = 0;
 
-    // Load saved students
     let students = JSON.parse(localStorage.getItem('students')) || [];
     students.forEach((student, index) => addStudentToGallery(student, index));
 
@@ -171,8 +257,9 @@
           <div>${student.line1}</div>
           ${student.line2 ? `<div>${student.line2}</div>` : ""}
         </div>
-        <button class="delete-btn" onclick="deleteStudent(${index})">❌ Delete</button>
+        <button class="delete-btn" onclick="deleteStudent(${index}); event.stopPropagation();">❌ Delete</button>
       `;
+      card.onclick = () => showPopup(index);
       gallery.appendChild(card);
 
       if (isAdmin) {
@@ -222,6 +309,57 @@
       loginBtn.style.display = "inline-block";
       document.querySelectorAll('.delete-btn').forEach(btn => btn.style.display = "none");
     }
+
+    function showPopup(index) {
+      currentIndex = index;
+      popupImg.src = students[index].photo;
+      popupName.textContent = students[index].line1 + (students[index].line2 ? "\n" + students[index].line2 : "");
+      popup.style.display = "flex";
+
+      // Hide arrows if only one student
+      if (students.length <= 1) {
+        leftArrow.style.display = "none";
+        rightArrow.style.display = "none";
+      } else {
+        leftArrow.style.display = "inline-block";
+        rightArrow.style.display = "inline-block";
+      }
+    }
+
+    function hidePopup() {
+      popup.style.display = "none";
+    }
+
+    function closePopup(event) {
+      if (event.target === popup) {
+        hidePopup();
+      }
+    }
+
+    function prevStudent(event) {
+      if (event) event.stopPropagation();
+      currentIndex = (currentIndex - 1 + students.length) % students.length;
+      showPopup(currentIndex);
+    }
+
+    function nextStudent(event) {
+      if (event) event.stopPropagation();
+      currentIndex = (currentIndex + 1) % students.length;
+      showPopup(currentIndex);
+    }
+
+    // ✅ Keyboard support
+    document.addEventListener("keydown", function(e) {
+      if (popup.style.display === "flex") {
+        if (e.key === "ArrowLeft" && students.length > 1) {
+          prevStudent();
+        } else if (e.key === "ArrowRight" && students.length > 1) {
+          nextStudent();
+        } else if (e.key === "Escape") {
+          hidePopup();
+        }
+      }
+    });
   </script>
 </body>
 </html>
