@@ -3,174 +3,120 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chloris (Red House) - KMC Public School</title>
+  <title>Chloris Red House - KMC Public School</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #fff5f5;
-      margin: 0;
-      padding: 0;
-      text-align: center;
-    }
-    header {
-      background: #b91c1c;
-      color: white;
-      padding: 20px;
-    }
-    header h1 {
-      margin: 0;
-      font-size: 28px;
-    }
-    form {
-      margin: 20px auto;
-      background: #ffe5e5;
-      padding: 15px;
-      border-radius: 10px;
-      width: 90%;
-      max-width: 400px;
-    }
-    form input {
-      display: block;
-      width: 100%;
-      margin: 10px 0;
-      padding: 8px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-    }
-    form button {
-      background: #b91c1c;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: bold;
-      margin-top: 5px;
-    }
-    form button:hover {
-      background: #dc2626;
-    }
-    .admin-controls {
-      margin: 20px auto;
-    }
-    .admin-controls button {
-      display: none; /* Hidden until login */
-    }
-    .gallery {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-      gap: 15px;
-      padding: 20px;
-    }
-    .card {
-      background: white;
-      border: 2px solid #fca5a5;
-      border-radius: 10px;
-      padding: 10px;
-      box-shadow: 2px 2px 6px rgba(0,0,0,0.1);
-    }
-    .card img {
-      width: 100%;
-      height: 150px;
-      object-fit: cover;
-      border-radius: 8px;
-    }
-    .card p {
-      margin: 8px 0 0;
-      font-weight: bold;
-      color: #b91c1c;
-    }
+    body { font-family: Arial, sans-serif; text-align: center; background: #fff0f0; }
+    h1 { color: red; }
+    .gallery { display: flex; flex-wrap: wrap; justify-content: center; }
+    .student { border: 2px solid red; border-radius: 10px; padding: 10px; margin: 10px; background: white; width: 200px; }
+    .student img { width: 100%; border-radius: 8px; }
+    .delete-btn { display: none; background: darkred; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 5px; margin-top: 5px; }
+    .delete-btn:hover { background: crimson; }
+    #controls { margin: 20px; }
+    #logoutBtn { display: none; background: black; color: white; padding: 5px 10px; border: none; border-radius: 5px; cursor: pointer; }
+    #logoutBtn:hover { background: gray; }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Chloris (Red House) - KMC Public School</h1>
-    <p>Student Gallery</p>
-  </header>
+  <h1>Chloris (Red) House - KMC Public School</h1>
 
-  <form id="studentForm">
-    <input type="text" id="name" placeholder="Enter Student Name" required>
-    <input type="file" id="photo" accept="image/*" required>
-    <button type="submit">Add Student</button>
-  </form>
-
-  <div class="admin-controls">
-    <button id="resetBtn" onclick="resetGallery()">🔒 Admin Reset Gallery</button>
-    <button id="logoutBtn" onclick="adminLogout()">🚪 Log Out Admin</button>
+  <div id="controls">
+    <input type="text" id="nameInput" placeholder="Enter Student Name">
+    <input type="file" id="imageInput" accept="image/*">
+    <button onclick="addStudent()">Add Student</button>
+    <br><br>
+    <button onclick="adminLogin()">Admin Login</button>
+    <button id="logoutBtn" onclick="adminLogout()">Logout Admin</button>
   </div>
 
-  <div class="admin-login">
-    <button id="loginBtn" onclick="adminLogin()">🔑 Admin Login</button>
-  </div>
-
-  <section class="gallery" id="gallery"></section>
+  <div class="gallery" id="gallery"></div>
 
   <script>
-    const form = document.getElementById('studentForm');
-    const gallery = document.getElementById('gallery');
-    const resetBtn = document.getElementById('resetBtn');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const loginBtn = document.getElementById('loginBtn');
+    let isAdmin = false;
+    const ADMIN_PASSWORD = "1234"; // change as needed
 
-    // Load saved students
-    const students = JSON.parse(localStorage.getItem('students')) || [];
-    students.forEach(addStudentToGallery);
-
-    form.addEventListener('submit', function(e) {
-      e.preventDefault();
-      const name = document.getElementById('name').value;
-      const file = document.getElementById('photo').files[0];
-
-      if (!file) return;
+    function addStudent() {
+      const name = document.getElementById("nameInput").value;
+      const file = document.getElementById("imageInput").files[0];
+      if (!name || !file) {
+        alert("Please enter a name and select an image!");
+        return;
+      }
 
       const reader = new FileReader();
-      reader.onload = function(event) {
-        const student = { name, photo: event.target.result };
-        students.push(student);
-        localStorage.setItem('students', JSON.stringify(students));
-        addStudentToGallery(student);
+      reader.onload = function(e) {
+        const gallery = document.getElementById("gallery");
+        const div = document.createElement("div");
+        div.className = "student";
+
+        div.innerHTML = `
+          <h3>${name}</h3>
+          <img src="${e.target.result}" alt="${name}">
+          <button class="delete-btn" onclick="deleteStudent(this)">❌ Delete</button>
+        `;
+        gallery.appendChild(div);
+        saveGallery();
+        showDeleteButtons(); // make sure new one follows admin mode
       };
       reader.readAsDataURL(file);
 
-      form.reset();
-    });
-
-    function addStudentToGallery(student) {
-      const card = document.createElement('div');
-      card.classList.add('card');
-      card.innerHTML = `
-        <img src="${student.photo}" alt="${student.name}">
-        <p>${student.name}</p>
-      `;
-      gallery.appendChild(card);
+      document.getElementById("nameInput").value = "";
+      document.getElementById("imageInput").value = "";
     }
 
-    function resetGallery() {
-      if (confirm("Are you sure you want to reset the gallery?")) {
-        localStorage.removeItem('students');
-        gallery.innerHTML = "";
-        alert("✅ Gallery has been reset successfully!");
+    function deleteStudent(button) {
+      if (!isAdmin) {
+        alert("Only admin can delete!");
+        return;
       }
+      button.parentElement.remove();
+      saveGallery();
     }
 
     function adminLogin() {
-      const password = prompt("Enter Admin Password:");
-      if (password === "chloris@2025") {
-        alert("✅ Admin Access Granted");
-        resetBtn.style.display = "inline-block";
-        logoutBtn.style.display = "inline-block";
-        loginBtn.style.display = "none";
-      } else if (password !== null) {
-        alert("❌ Wrong Password! Access Denied.");
+      const pwd = prompt("Enter Admin Password:");
+      if (pwd === ADMIN_PASSWORD) {
+        isAdmin = true;
+        alert("Admin mode activated!");
+        document.getElementById("logoutBtn").style.display = "inline-block";
+        showDeleteButtons();
+      } else {
+        alert("Incorrect password!");
       }
     }
 
     function adminLogout() {
-      alert("🚪 Admin Logged Out");
-      resetBtn.style.display = "none";
-      logoutBtn.style.display = "none";
-      loginBtn.style.display = "inline-block";
+      isAdmin = false;
+      alert("Admin mode deactivated!");
+      document.getElementById("logoutBtn").style.display = "none";
+      hideDeleteButtons();
     }
+
+    function showDeleteButtons() {
+      document.querySelectorAll(".delete-btn").forEach(btn => btn.style.display = "inline-block");
+    }
+
+    function hideDeleteButtons() {
+      document.querySelectorAll(".delete-btn").forEach(btn => btn.style.display = "none");
+    }
+
+    function saveGallery() {
+      localStorage.setItem("gallery", document.getElementById("gallery").innerHTML);
+    }
+
+    function loadGallery() {
+      const saved = localStorage.getItem("gallery");
+      if (saved) {
+        document.getElementById("gallery").innerHTML = saved;
+      }
+      if (isAdmin) {
+        showDeleteButtons();
+      } else {
+        hideDeleteButtons();
+      }
+    }
+
+    loadGallery();
   </script>
 </body>
 </html>
