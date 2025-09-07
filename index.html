@@ -76,13 +76,13 @@
       object-fit: cover;
       border-radius: 8px;
     }
-    .card p {
-      margin: 8px 0 0;
+    .card .name-block {
+      margin-top: 8px;
       font-weight: bold;
       color: #b91c1c;
       font-size: 14px;
       display: -webkit-box;
-      -webkit-line-clamp: 2;   /* ✅ max 2 lines */
+      -webkit-line-clamp: 2;   /* allow max 2 lines */
       -webkit-box-orient: vertical;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -113,7 +113,8 @@
   </header>
 
   <form id="studentForm">
-    <input type="text" id="name" placeholder="Enter Student Name" required>
+    <input type="text" id="line1" placeholder="Enter First Line of Name" required>
+    <input type="text" id="line2" placeholder="Enter Second Line of Name (optional)">
     <input type="file" id="photo" accept="image/*" required>
     <button type="submit">Add Student</button>
   </form>
@@ -143,14 +144,15 @@
 
     form.addEventListener('submit', function(e) {
       e.preventDefault();
-      const name = document.getElementById('name').value;
+      const line1 = document.getElementById('line1').value;
+      const line2 = document.getElementById('line2').value;
       const file = document.getElementById('photo').files[0];
 
       if (!file) return;
 
       const reader = new FileReader();
       reader.onload = function(event) {
-        const student = { name, photo: event.target.result };
+        const student = { line1, line2, photo: event.target.result };
         students.push(student);
         localStorage.setItem('students', JSON.stringify(students));
         addStudentToGallery(student, students.length - 1);
@@ -164,8 +166,11 @@
       const card = document.createElement('div');
       card.classList.add('card');
       card.innerHTML = `
-        <img src="${student.photo}" alt="${student.name}">
-        <p>${student.name}</p>
+        <img src="${student.photo}" alt="${student.line1}">
+        <div class="name-block">
+          <div>${student.line1}</div>
+          ${student.line2 ? `<div>${student.line2}</div>` : ""}
+        </div>
         <button class="delete-btn" onclick="deleteStudent(${index})">❌ Delete</button>
       `;
       gallery.appendChild(card);
